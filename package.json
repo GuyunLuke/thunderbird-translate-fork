@@ -1,28 +1,26 @@
 {
-	"name": "thunderbird-translate",
-	"version": "1.1",
-	"description": "A translation add-on which uses the Gemini API to translate your mails in one click.",
-	"scripts": {
-		"clean": "rimraf dist web-ext-artifacts",
-		"build:dev": "cross-env NODE_ENV=dev ts-node scripts/build.ts",
-		"build:prod": "cross-env NODE_ENV=prod ts-node scripts/build.ts",
-		"build:web-ext": "npm run build:prod && web-ext build --source-dir=dist --overwrite-dest -n thunderbird-translate.xpi",
-		"dev": "tsc -w"
-	},
-	"devDependencies": {
-		"@types/dompurify": "^3.0.5",
-		"@types/thunderbird-webext-browser": "^127.0.0",
-		"cpy": "^12.1.0",
-		"cpy-cli": "^6.0.0",
-		"cross-env": "^10.1.0",
-		"dompurify": "^3.3.0",
-		"esbuild": "^0.25.11",
-		"rimraf": "^6.0.1",
-		"ts-node": "^10.9.2",
-		"typescript": "^5.9.3",
-		"web-ext": "^9.1.0"
-	},
-	"dependencies": {
-		"@google/genai": "^1.28.0"
-	}
+    "name": "thunderbird-translate",
+    "version": "1.1",
+    "description": "A translation add-on which uses the Gemini API to translate your mails in one click.",
+    "scripts": {
+        "clean": "rimraf dist web-ext-artifacts",
+        "build:dev": "cross-env NODE_ENV=dev ts-node scripts/build.ts",
+        "build:prod": "cross-env NODE_ENV=prod ts-node scripts/build.ts",
+        "build:web-ext": "npm run build:prod && web-ext build --source-dir=dist --overwrite-dest -n thunderbird-translate.xpi",
+        "build:xpi": "npm run build:prod && cd dist && zip -oX -r ../thunderbird-translate.xpi * && cd ..",
+        "dev": "tsc -w"
+    },
+    "devDependencies": {
+        "@google/genai": "^1.30.0",
+        "@types/dompurify": "^3.0.5",
+        "@types/thunderbird-webext-browser": "^127.0.0",
+        "cpy": "^12.1.0",
+        "cpy-cli": "^6.0.0",
+        "cross-env": "^10.1.0",
+        "dompurify": "^3.3.0",
+        "esbuild": "^0.25.11",
+        "rimraf": "^6.1.2",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.9.3"
+    }
 }
