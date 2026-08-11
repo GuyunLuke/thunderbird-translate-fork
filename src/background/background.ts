@@ -99,24 +99,82 @@ async function translateEmail(
     }
 }
 
-// Extract visible plain text from an HTML mail body. Block-level tags become
-// line breaks so paragraphs survive; everything else is stripped.
+// Extract visible plain text from an HTML mail body. Walks the sanitized
+// DOM, skipping hidden subtrees (display:none previews etc.), keeps only one
+// of the duplicate desktop/mobile variant blocks, and drops duplicate
+// paragraphs so template redundancy never reaches the translation API.
 function htmlToPlainText(html: string): string {
-    return html
-        .replace(/<style[\s\S]*?<\/style>/gi, " ")
-        .replace(/<script[\s\S]*?<\/script>/gi, " ")
-        .replace(/<!--[\s\S]*?-->/g, " ")
-        .replace(/<(p|div|tr|li|h[1-6]|br|table)[^>]*>/gi, "\n")
-        .replace(/<[^>]+>/g, "")
-        .replace(/&nbsp;/gi, " ")
-        .replace(/&amp;/gi, "&")
-        .replace(/&lt;/gi, "<")
-        .replace(/&gt;/gi, ">")
-        .replace(/&quot;/gi, '"')
-        .replace(/&#39;/gi, "'")
-        .replace(/\r\n/g, "\n")
+    const desktop = extractVisibleText(html, "ntes-edm-mobile");
+    const mobile = extractVisibleText(html, "ntes-edm-desktop");
+    const text = desktop.length >= mobile.length ? desktop : mobile;
+
+    // paragraph-level deduplication, keeping the first occurrence
+    const seen = new Set<string>();
+    const lines: string[] = [];
+    for (const raw of text.split("\n")) {
+        const line = raw.trim();
+        if (!line) {
+            lines.push("");
+        } else if (!seen.has(line)) {
+            seen.add(line);
+            lines.push(line);
+        } else {
+            lines.push("");
+        }
+    }
+    return lines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+// Walk the sanitized DOM and collect visible text. Subtree skipped when it
+// is hidden or carries the given variant class.
+function extractVisibleText(html: string, dropVariantClass: string): string {
+    const doc = DOMPurify.sanitize(html, { RETURN_DOM: true });
+    const parts: string[] = [];
+
+    function isHidden(el: Element): boolean {
+        const style = (el as HTMLElement).style;
+        return (
+            style.display === "none" ||
+            style.visibility === "hidden" ||
+            el.getAttribute("hidden") !== null
+        );
+    }
+
+    function walk(node: Node): void {
+        if (node.nodeType === Node.TEXT_NODE) {
+            const text = (node.textContent || "").trim();
+            if (text) {
+                parts.push(text);
+            }
+            return;
+        }
+        if (node.nodeType !== Node.ELEMENT_NODE) {
+            return;
+        }
+        const el = node as Element;
+        const cls = String(el.className || "");
+        if (cls.includes(dropVariantClass)) {
+            return; // skip this duplicate desktop/mobile variant block
+        }
+        if (isHidden(el)) {
+            return; // skip display:none / hidden subtrees
+        }
+        for (const child of Array.from(el.childNodes)) {
+            walk(child);
+        }
+        if (/^(P|DIV|TR|LI|H[1-6]|TABLE|BR)$/.test(el.tagName)) {
+            parts.push("\n");
+        }
+    }
+
+    for (const child of Array.from(doc.childNodes)) {
+        walk(child);
+    }
+
+    return parts
+        .join(" ")
         .replace(/[ \t]{2,}/g, " ")
-        .replace(/[ \t]+\n/g, "\n")
+        .replace(/ ?\n ?/g, "\n")
         .replace(/\n{3,}/g, "\n\n")
         .trim();
 }
