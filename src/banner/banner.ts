@@ -1,48 +1,42 @@
 import { getMessage } from "../i18n";
 
-let bannerTemplate: string | null;
-
 // Listen for messages from the background script
 browser.runtime.onMessage.addListener(async (message) => {
   if (message.action === "showLoading") {
-    bannerTemplate = message.bannerTemplate;
-    showBanner(await getMessage("loadingMessage"), "success", false);
+    showBanner(await getMessage("loadingMessage"), "success");
   }
   if (message.action === "showBanner") {
-    const { content, status, html } = message;
-    showBanner(content, status, html);
+    const { content, status } = message;
+    showBanner(content, status);
   }
   return false; // done processing
 });
 
-async function showBanner(content: string, status: string, html: boolean) {
+// Build the banner with createElement and insert all content via textContent:
+// nothing user-controlled is ever parsed as HTML, so no sanitizer is needed.
+async function showBanner(content: string, status: string) {
   const existingBanner = document.querySelector(".translation-banner");
   if (existingBanner) {
-    // remove old banner
     existingBanner.remove();
   }
 
-  const container = document.createElement("div");
-  // bannerTemplate was previously sanitized in the background script
-  container.innerHTML = bannerTemplate || "";
-  const banner = container.firstChild as HTMLDivElement;
-  banner.classList.add(status);
+  const banner = document.createElement("div");
+  banner.className = `translation-banner ${status}`;
 
-  const bannerText = banner.querySelector("#banner-text") as HTMLDivElement;
-  if (html) {
-    bannerText.innerHTML = content;
-  } else {
-    bannerText.textContent = content;
-  }
-
-  const settingsLink = banner.querySelector(
-    "#settings-link",
-  ) as HTMLLinkElement;
+  const settingsLink = document.createElement("a");
+  settingsLink.href = "#";
+  settingsLink.id = "settings-link";
   settingsLink.textContent = await getMessage("openSettings");
   settingsLink.onclick = (event) => {
     event.preventDefault();
     browser.runtime.sendMessage({ action: "openOptionsPage" });
   };
 
+  const bannerText = document.createElement("div");
+  bannerText.id = "banner-text";
+  bannerText.textContent = content;
+
+  banner.appendChild(settingsLink);
+  banner.appendChild(bannerText);
   document.body.insertBefore(banner, document.body.firstChild);
 }

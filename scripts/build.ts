@@ -39,7 +39,6 @@ async function main() {
     const staticAssets = [
         "manifest.json",
         "src/banner/banner.css",
-        "src/banner/banner.html",
         "src/options/options.css",
         "src/options/options.html",
         "src/assets",

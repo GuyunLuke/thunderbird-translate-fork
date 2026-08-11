@@ -1,22 +1,8 @@
-import DOMPurify from "dompurify";
 import { getLanguage, getMessage } from "../i18n";
 
 if (messenger === undefined) {
     console.warn("Messenger API not available!");
 }
-
-// load and sanitize bannerHTML
-let sanitizedBannerHTML: string | null;
-(async () => {
-    const url = browser.runtime.getURL("src/banner/banner.html");
-    const response = await fetch(url);
-    if (!response.ok) {
-        console.warn("Failed to fetch banner.html:", response.status);
-        return;
-    }
-    const raw = await response.text();
-    sanitizedBannerHTML = DOMPurify.sanitize(raw);
-})();
 
 messenger.messageDisplayAction.onClicked.addListener(async (tab) => {
     if (tab.id === undefined) {
@@ -24,10 +10,7 @@ messenger.messageDisplayAction.onClicked.addListener(async (tab) => {
         return;
     }
     messenger.tabs
-        .sendMessage(tab.id, {
-            action: "showLoading",
-            bannerTemplate: sanitizedBannerHTML,
-        })
+        .sendMessage(tab.id, { action: "showLoading" })
         .catch(() => {});
     const message = await messenger.messageDisplay.getDisplayedMessage(tab.id);
     if (message == null) {
@@ -66,18 +49,15 @@ async function translateEmail(
     }
 
     try {
-        let translatedContent = await callTranslationAPI(content);
-        if (html) {
-            translatedContent = DOMPurify.sanitize(translatedContent);
-        }
+        const translatedContent = await callTranslationAPI(content);
 
-        // Send a message to the content script to display the banner
+        // Send a message to the content script to display the banner; the
+        // banner inserts it via textContent, never as HTML
         messenger.tabs
             .sendMessage(tabID, {
                 action: "showBanner",
                 content: translatedContent,
                 status: "success",
-                html: html,
             })
             .catch(() => {});
     } catch (error) {
@@ -93,7 +73,6 @@ async function translateEmail(
                 action: "showBanner",
                 content: errorMessage,
                 status: "error",
-                html: false,
             })
             .catch(() => {});
     }
