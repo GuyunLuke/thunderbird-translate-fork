@@ -6,6 +6,24 @@ if (!browser) {
   console.warn('missing "browser.storage.local"');
 }
 
+// Thunderbird does not reliably substitute __MSG_ placeholders in options
+// pages, so we localize manually via data-i18n attributes.
+function applyI18n(): void {
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    const key = el.getAttribute("data-i18n");
+    if (key) {
+      el.textContent = messenger.i18n.getMessage(key);
+    }
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    const key = el.getAttribute("data-i18n-placeholder");
+    if (key) {
+      (el as HTMLInputElement).placeholder = messenger.i18n.getMessage(key);
+    }
+  });
+}
+applyI18n();
+
 const DEFAULT_MODEL_GEMINI = "gemini-2.0-flash-exp";
 const DEFAULT_MODEL_DEEPSEEK = "deepseek-v4-flash";
 const DEFAULT_MODEL_OPENAI = "gpt-4o-mini";
@@ -20,9 +38,9 @@ const API_KEY_STORAGE_KEY: Record<string, string> = {
 };
 
 const apiKeyInput = document.getElementById("apiKeyInput") as HTMLInputElement;
+const apiKeyLabel = document.getElementById("apiKeyLabel") as HTMLLabelElement;
 const apiModeSelect = document.getElementById("apiModeSelect") as HTMLSelectElement;
-const modelInput = document.getElementById("modelInput") as HTMLInputElement;
-const modelList = document.getElementById("modelList") as HTMLDataListElement;
+const modelSelect = document.getElementById("modelSelect") as HTMLSelectElement;
 const baseUrlRow = document.getElementById("baseUrlRow") as HTMLDivElement;
 const baseUrlInput = document.getElementById("baseUrlInput") as HTMLInputElement;
 const statusPar = document.getElementById("status") as HTMLParagraphElement;
@@ -30,6 +48,16 @@ const testButton = document.getElementById("testButton") as HTMLButtonElement;
 
 function currentMode(): string {
   return apiModeSelect.value;
+}
+
+function defaultModelFor(mode: string): string {
+  if (mode === "deepseek") {
+    return DEFAULT_MODEL_DEEPSEEK;
+  }
+  if (mode === "openai") {
+    return DEFAULT_MODEL_OPENAI;
+  }
+  return DEFAULT_MODEL_GEMINI;
 }
 
 function showStatus(text: string, color: string): void {
@@ -45,6 +73,27 @@ async function loadKeyForMode(mode: string): Promise<void> {
   apiKeyInput.value = storage[API_KEY_STORAGE_KEY[mode]] || "";
 }
 
+// Fill the model dropdown. Keeps the current selection when it is still
+// available, otherwise selects the first entry.
+function fillModelList(models: string[], mode: string): void {
+  const previous = modelSelect.value;
+  const names = models.length ? models : [defaultModelFor(mode)];
+
+  modelSelect.innerHTML = "";
+  for (const name of names) {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    modelSelect.appendChild(option);
+  }
+
+  if (previous && names.includes(previous)) {
+    modelSelect.value = previous;
+  } else {
+    modelSelect.value = names[0];
+  }
+}
+
 async function updateModeUI(): Promise<void> {
   const mode = currentMode();
   const isDeepSeek = mode === "deepseek";
@@ -57,27 +106,45 @@ async function updateModeUI(): Promise<void> {
     baseUrlInput.value = "";
   }
 
-  if (isOpenAI) {
-    modelInput.placeholder = messenger.i18n.getMessage(
-      "modelPlaceholderOpenAI",
-    );
-  } else if (isDeepSeek) {
-    modelInput.placeholder = messenger.i18n.getMessage(
-      "modelPlaceholderDeepSeek",
-    );
-  } else {
-    modelInput.placeholder = messenger.i18n.getMessage("modelPlaceholderGemini");
+  // label the key field with the active provider
+  const providerNames: Record<string, string> = {
+    gemini: messenger.i18n.getMessage("providerGemini"),
+    deepseek: messenger.i18n.getMessage("providerDeepSeek"),
+    openai: messenger.i18n.getMessage("providerOpenAI"),
+  };
+  apiKeyLabel.textContent =
+    `${providerNames[mode]} ${messenger.i18n.getMessage("apiKey")}`;
+
+  // show the default model until the provider list is probed
+  if (!modelSelect.options.length) {
+    fillModelList([], mode);
   }
 
   await loadKeyForMode(mode);
 }
 
-apiModeSelect.addEventListener("change", () => {
-  updateModeUI().catch((error) => console.warn("updateModeUI failed:", error));
+apiModeSelect.addEventListener("change", async () => {
+  await updateModeUI();
+  // probe the model list with the key already saved for this provider
+  await probeModelsForCurrentMode();
 });
 
-// Fetch the model list from the provider and fill the datalist. Returns the
-// number of models found; callers fall back to manual input when 0.
+async function probeModelsForCurrentMode(): Promise<void> {
+  const mode = currentMode();
+  const storage = await messenger.storage.local.get(API_KEY_STORAGE_KEY[mode]);
+  const savedKey: string = storage[API_KEY_STORAGE_KEY[mode]] || "";
+  if (!savedKey) {
+    return;
+  }
+  const models = await fetchModelList(mode, savedKey);
+  if (models.length) {
+    fillModelList(models, mode);
+  }
+}
+
+// Fetch the model list from the provider. Returns an empty array when the
+// endpoint does not implement GET /models; the dropdown then keeps the
+// default model.
 async function fetchModelList(mode: string, apiKey: string): Promise<string[]> {
   try {
     if (mode === "gemini") {
@@ -113,15 +180,6 @@ async function fetchModelList(mode: string, apiKey: string): Promise<string[]> {
   } catch (error) {
     console.warn("Failed to fetch model list:", error);
     return [];
-  }
-}
-
-function fillModelList(models: string[]): void {
-  modelList.innerHTML = "";
-  for (const name of models) {
-    const option = document.createElement("option");
-    option.value = name;
-    modelList.appendChild(option);
   }
 }
 
@@ -178,13 +236,13 @@ testButton.onclick = async () => {
       await messenger.storage.local.set({
         [API_KEY_STORAGE_KEY[mode]]: apiKey,
         apiMode: mode,
-        model: modelInput.value.trim(),
+        model: modelSelect.value,
         // only the OpenAI-compatible mode has a custom base URL
         baseUrl: mode === "openai" ? baseUrlInput.value.trim() : "",
       });
       // probe the model list so the user can pick instead of typing
       const models = await fetchModelList(mode, apiKey);
-      fillModelList(models);
+      fillModelList(models, mode);
       showStatus(messenger.i18n.getMessage("settingsSaved"), "green");
     } else {
       showStatus(messenger.i18n.getMessage("invalidKeyOrEndpoint"), "red");
@@ -205,11 +263,14 @@ testButton.onclick = async () => {
   if (storage.apiMode === "openai" || storage.apiMode === "deepseek") {
     apiModeSelect.value = storage.apiMode;
   }
-  if (storage.model) {
-    modelInput.value = storage.model;
-  }
   if (storage.baseUrl && storage.apiMode === "openai") {
     baseUrlInput.value = storage.baseUrl;
   }
   await updateModeUI();
+  // restore the saved model selection when it exists
+  if (storage.model) {
+    fillModelList([storage.model], currentMode());
+  }
+  // probe the model list with the key already saved for this provider
+  await probeModelsForCurrentMode();
 })();
