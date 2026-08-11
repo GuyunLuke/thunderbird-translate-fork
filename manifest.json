@@ -24,7 +24,8 @@
 		"messagesRead",
 		"messagesModify",
 		"storage",
-		"tabs"
+		"tabs",
+		"<all_urls>"
 	],
 	"background": {
 		"scripts": [

@@ -53,7 +53,7 @@ async function translateEmail(
     }
 
     try {
-        let translatedContent = await callGemini(content);
+        let translatedContent = await callTranslationAPI(content);
         if (html) {
             translatedContent = DOMPurify.sanitize(translatedContent);
         }
@@ -138,7 +138,11 @@ browser.runtime.onMessage.addListener((message) => {
     return false; // done processing
 });
 
-const geminiPrompt = `
+const DEFAULT_MODEL_GEMINI = "gemini-2.0-flash-exp";
+const DEFAULT_MODEL_OPENAI = "gpt-4o-mini";
+const DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1";
+
+const translationSystemPrompt = `
 You are a professional translator. Translate the following email to ${browser.i18n.getUILanguage()}.
 
 CRITICAL RULES:
@@ -146,12 +150,22 @@ CRITICAL RULES:
 - Only translate the actual text content, not markup, URLs, or email addresses
 - Do NOT add explanations, commentary, or markdown formatting
 - Return ONLY the translated content
-
-Content to translate:
 `;
 
-async function callGemini(text: string): Promise<string> {
-    const storage = await browser.storage.local.get("apiKey");
+interface TranslationConfig {
+    apiKey: string;
+    apiMode: "gemini" | "openai";
+    model?: string;
+    baseUrl?: string;
+}
+
+async function getTranslationConfig(): Promise<TranslationConfig> {
+    const storage = await browser.storage.local.get([
+        "apiKey",
+        "apiMode",
+        "model",
+        "baseUrl",
+    ]);
 
     if (!storage.apiKey) {
         throw new Error(
@@ -159,10 +173,32 @@ async function callGemini(text: string): Promise<string> {
         );
     }
 
-    const fullPrompt = geminiPrompt + text;
+    return {
+        apiKey: storage.apiKey,
+        apiMode: storage.apiMode === "openai" ? "openai" : "gemini",
+        model: storage.model,
+        baseUrl: storage.baseUrl,
+    };
+}
+
+async function callTranslationAPI(text: string): Promise<string> {
+    const config = await getTranslationConfig();
+
+    if (config.apiMode === "openai") {
+        return callOpenAICompatible(text, config);
+    }
+    return callGemini(text, config);
+}
+
+async function callGemini(
+    text: string,
+    config: TranslationConfig,
+): Promise<string> {
+    const model = config.model || DEFAULT_MODEL_GEMINI;
+    const fullPrompt = translationSystemPrompt + "\n\nContent to translate:\n" + text;
     console.debug(fullPrompt);
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${storage.apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${config.apiKey}`;
 
     const requestBody = { contents: [{ parts: [{ text: fullPrompt }] }] };
 
@@ -186,4 +222,43 @@ async function callGemini(text: string): Promise<string> {
     }
 
     return data.candidates[0].content.parts[0].text;
+}
+
+async function callOpenAICompatible(
+    text: string,
+    config: TranslationConfig,
+): Promise<string> {
+    const baseUrl = (config.baseUrl || DEFAULT_OPENAI_BASE_URL).replace(/\/+$/, "");
+    const model = config.model || DEFAULT_MODEL_OPENAI;
+    const url = `${baseUrl}/chat/completions`;
+
+    const requestBody = {
+        model: model,
+        messages: [
+            { role: "system", content: translationSystemPrompt },
+            { role: "user", content: "Content to translate:\n" + text },
+        ],
+    };
+
+    const response = await fetch(url, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${config.apiKey}`,
+        },
+        body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Translation failed: ${response.status} - ${errorData}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.choices?.[0]?.message?.content) {
+        throw new Error("Translation failed due to an API error.");
+    }
+
+    return data.choices[0].message.content;
 }

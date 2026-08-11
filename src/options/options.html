@@ -10,24 +10,33 @@
 
 <body>
 	<h1>Thunderbird Translate Settings</h1>
+	<label for="apiModeSelect">API Provider:</label>
+	<select id="apiModeSelect">
+		<option value="gemini">Google Gemini</option>
+		<option value="openai">OpenAI-compatible</option>
+	</select>
+	<label for="modelInput">Model:</label>
+	<input type="text" id="modelInput" placeholder="e.g. gemini-2.0-flash-exp" autocomplete="off">
+	<div id="baseUrlRow" style="display:none;">
+		<label for="baseUrlInput">Base URL (OpenAI-compatible):</label>
+		<input type="text" id="baseUrlInput" placeholder="https://api.openai.com/v1" autocomplete="off">
+	</div>
 	<label for="api-key">API Key:</label>
 	<input type="text" id="apiKeyInput" placeholder="Enter your API key" required>
-	<button id="testButton">Test Key</button>
+	<button id="testButton">Save &amp; Test</button>
 	<p id="status" style="color: green;"></p>
-	<p>If you don't have a key yet, you can get one for <b>free</b> at <a
+	<p>If you don't have a Gemini key yet, you can get one for <b>free</b> at <a
 			href="https://aistudio.google.com/apikey">https://aistudio.google.com/apikey</a>.</p>
 	<div id="data-notice" style="border:1px solid #ccc; padding:12px; background:#fffbe6; margin-bottom:12px;">
 		<p><strong>Privacy notice:</strong> When you request a translation we send only the email message body (the HTML
-			source or, if not available, the plain-text body) to Google’s Generative Language API (Gemini) to produce
-			the translation. We do not send your account credentials, mailbox headers, recipients, subject, attachments,
+			source or, if not available, the plain-text body) to the translation provider you configured (Google's
+			Generative Language API by default, or any OpenAI-compatible endpoint you specify) to produce the
+			translation. We do not send your account credentials, mailbox headers, recipients, subject, attachments,
 			or other mailbox metadata. The API key you enter is stored locally in the add‑on
-			(<code>browser.storage.local</code>) and is used solely to authenticate requests to Google. HTML markup is
-			included so structure can be preserved; URLs and email addresses are part of the sent content but are
-			instructed not to be altered. Do not translate sensitive or confidential content if you require full
-			privacy. For more information, see the Gemini Apps Privacy Hub: <a
-				href="https://support.google.com/gemini/answer/13594961" target="_blank"
-				rel="noopener">https://support.google.com/gemini/answer/13594961</a>
-		</p>
+			(<code>browser.storage.local</code>) and is used solely to authenticate requests to the configured provider.
+			HTML markup is included so structure can be preserved; URLs and email addresses are part of the sent content
+			but are instructed not to be altered. Do not translate sensitive or confidential content if you require full
+			privacy.</p>
 	</div>
 	<script src="./options.js"></script>
 </body>
