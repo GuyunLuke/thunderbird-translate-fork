@@ -8,7 +8,9 @@ if (!browser) {
 
 const DEFAULT_MODEL_GEMINI = "gemini-2.0-flash-exp";
 const DEFAULT_MODEL_OPENAI = "gpt-4o-mini";
+const DEFAULT_MODEL_DEEPSEEK = "deepseek-v4-flash";
 const DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1";
+const DEFAULT_DEEPSEEK_BASE_URL = "https://api.deepseek.com";
 
 const apiKeyInput = document.getElementById("apiKeyInput") as HTMLInputElement;
 const apiModeSelect = document.getElementById("apiModeSelect") as HTMLSelectElement;
@@ -19,19 +21,48 @@ const statusPar = document.getElementById("status") as HTMLParagraphElement;
 const testButton = document.getElementById("testButton") as HTMLButtonElement;
 
 function updateModeUI() {
-  const isOpenAI = apiModeSelect.value === "openai";
+  const mode = apiModeSelect.value;
+  const isOpenAI = mode === "openai";
+  const isDeepSeek = mode === "deepseek";
 
-  baseUrlRow.style.display = isOpenAI ? "" : "none";
+  baseUrlRow.style.display = isOpenAI || isDeepSeek ? "" : "none";
+
   if (isOpenAI) {
     modelInput.placeholder = `e.g. ${DEFAULT_MODEL_OPENAI}, deepseek-chat, or your provider's model`;
-    if (modelInput.value && modelInput.value === DEFAULT_MODEL_GEMINI) {
+    if (
+      modelInput.value &&
+      (modelInput.value === DEFAULT_MODEL_GEMINI ||
+        modelInput.value === DEFAULT_MODEL_DEEPSEEK)
+    ) {
+      modelInput.value = "";
+    }
+  } else if (isDeepSeek) {
+    modelInput.placeholder = "e.g. deepseek-v4-flash, deepseek-v4-pro";
+    if (
+      modelInput.value &&
+      (modelInput.value === DEFAULT_MODEL_GEMINI ||
+        modelInput.value === DEFAULT_MODEL_OPENAI)
+    ) {
       modelInput.value = "";
     }
   } else {
     modelInput.placeholder = `e.g. ${DEFAULT_MODEL_GEMINI}, gemini-2.5-flash`;
-    if (modelInput.value && modelInput.value === DEFAULT_MODEL_OPENAI) {
+    if (
+      modelInput.value &&
+      (modelInput.value === DEFAULT_MODEL_OPENAI ||
+        modelInput.value === DEFAULT_MODEL_DEEPSEEK)
+    ) {
       modelInput.value = "";
     }
+  }
+
+  // fill in the provider default base URL when the field is empty
+  if (baseUrlRow.style.display !== "none" && !baseUrlInput.value) {
+    baseUrlInput.value = isDeepSeek
+      ? DEFAULT_DEEPSEEK_BASE_URL
+      : DEFAULT_OPENAI_BASE_URL;
+  } else if (baseUrlRow.style.display === "none" && baseUrlInput.value) {
+    baseUrlInput.value = "";
   }
 }
 
@@ -50,26 +81,35 @@ testButton.onclick = async () => {
     return;
   }
 
-  const isOpenAI = apiModeSelect.value === "openai";
+  const mode = apiModeSelect.value;
+  const isGemini = mode === "gemini";
+  const isDeepSeek = mode === "deepseek";
 
-  let url: string;
+  let urls: string[];
   let headers: Record<string, string>;
 
-  if (isOpenAI) {
-    const baseUrl = (
-      baseUrlInput.value.trim() || DEFAULT_OPENAI_BASE_URL
-    ).replace(/\/+$/, "");
-    url = `${baseUrl}/models`;
-    headers = {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${apiKey}`,
-    };
-  } else {
-    url = "https://generativelanguage.googleapis.com/v1/models";
+  if (isGemini) {
+    urls = ["https://generativelanguage.googleapis.com/v1/models"];
     headers = {
       "Content-Type": "application/json",
       "X-goog-api-key": apiKey,
     };
+  } else {
+    const defaultBaseUrl = isDeepSeek
+      ? DEFAULT_DEEPSEEK_BASE_URL
+      : DEFAULT_OPENAI_BASE_URL;
+    const baseUrl = (
+      baseUrlInput.value.trim() || defaultBaseUrl
+    ).replace(/\/+$/, "");
+    headers = {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`,
+    };
+    urls = [`${baseUrl}/models`];
+    // DeepSeek: fall back to the balance endpoint if /models is not available
+    if (isDeepSeek) {
+      urls.push(`${baseUrl}/user/balance`);
+    }
   }
 
   const request = {
@@ -78,13 +118,19 @@ testButton.onclick = async () => {
   };
 
   try {
-    const response = await fetch(url, request);
+    let response: Response | undefined;
+    for (const url of urls) {
+      response = await fetch(url, request);
+      if (response.ok) {
+        break;
+      }
+    }
 
-    if (response.ok) {
+    if (response?.ok) {
       // Save all settings if the test succeeds
       await messenger.storage.local.set({
         apiKey,
-        apiMode: isOpenAI ? "openai" : "gemini",
+        apiMode: mode,
         model: modelInput.value.trim(),
         baseUrl: baseUrlInput.value.trim(),
       });
@@ -133,8 +179,8 @@ testButton.onclick = async () => {
   } else {
     console.warn("no API key in storage");
   }
-  if (storage.apiMode === "openai") {
-    apiModeSelect.value = "openai";
+  if (storage.apiMode === "openai" || storage.apiMode === "deepseek") {
+    apiModeSelect.value = storage.apiMode;
   }
   if (storage.model) {
     modelInput.value = storage.model;

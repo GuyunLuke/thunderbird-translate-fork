@@ -140,7 +140,9 @@ browser.runtime.onMessage.addListener((message) => {
 
 const DEFAULT_MODEL_GEMINI = "gemini-2.0-flash-exp";
 const DEFAULT_MODEL_OPENAI = "gpt-4o-mini";
+const DEFAULT_MODEL_DEEPSEEK = "deepseek-v4-flash";
 const DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1";
+const DEFAULT_DEEPSEEK_BASE_URL = "https://api.deepseek.com";
 
 const translationSystemPrompt = `
 You are a professional translator. Translate the following email to ${browser.i18n.getUILanguage()}.
@@ -154,7 +156,7 @@ CRITICAL RULES:
 
 interface TranslationConfig {
     apiKey: string;
-    apiMode: "gemini" | "openai";
+    apiMode: "gemini" | "openai" | "deepseek";
     model?: string;
     baseUrl?: string;
 }
@@ -173,9 +175,18 @@ async function getTranslationConfig(): Promise<TranslationConfig> {
         );
     }
 
+    let apiMode: "gemini" | "openai" | "deepseek";
+    if (storage.apiMode === "deepseek") {
+        apiMode = "deepseek";
+    } else if (storage.apiMode === "openai") {
+        apiMode = "openai";
+    } else {
+        apiMode = "gemini";
+    }
+
     return {
         apiKey: storage.apiKey,
-        apiMode: storage.apiMode === "openai" ? "openai" : "gemini",
+        apiMode,
         model: storage.model,
         baseUrl: storage.baseUrl,
     };
@@ -184,10 +195,10 @@ async function getTranslationConfig(): Promise<TranslationConfig> {
 async function callTranslationAPI(text: string): Promise<string> {
     const config = await getTranslationConfig();
 
-    if (config.apiMode === "openai") {
-        return callOpenAICompatible(text, config);
+    if (config.apiMode === "gemini") {
+        return callGemini(text, config);
     }
-    return callGemini(text, config);
+    return callOpenAICompatible(text, config);
 }
 
 async function callGemini(
@@ -228,8 +239,14 @@ async function callOpenAICompatible(
     text: string,
     config: TranslationConfig,
 ): Promise<string> {
-    const baseUrl = (config.baseUrl || DEFAULT_OPENAI_BASE_URL).replace(/\/+$/, "");
-    const model = config.model || DEFAULT_MODEL_OPENAI;
+    const isDeepSeek = config.apiMode === "deepseek";
+    const defaultBaseUrl = isDeepSeek
+        ? DEFAULT_DEEPSEEK_BASE_URL
+        : DEFAULT_OPENAI_BASE_URL;
+    const defaultModel = isDeepSeek ? DEFAULT_MODEL_DEEPSEEK : DEFAULT_MODEL_OPENAI;
+
+    const baseUrl = (config.baseUrl || defaultBaseUrl).replace(/\/+$/, "");
+    const model = config.model || defaultModel;
     const url = `${baseUrl}/chat/completions`;
 
     const requestBody = {
