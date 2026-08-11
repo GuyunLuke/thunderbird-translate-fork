@@ -1,12 +1,12 @@
 {
 	"compilerOptions": {
 		"target": "ES2019",
-		"module": "none",
+		"module": "preserve",
 		"lib": [
 			"DOM",
 			"ES2019"
 		],
-		"moduleResolution": "node",
+		"moduleResolution": "bundler",
 		"strict": true,
 		"esModuleInterop": true,
 		"skipLibCheck": true,
