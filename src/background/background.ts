@@ -44,10 +44,12 @@ async function translateEmail(
     const fullMessage = await messenger.messages.getFull(message.id);
     let { content, html } = extractTextFromMessage(fullMessage);
 
-    // Strip styling/scripts/tracking noise before sending so the translation
-    // request stays small and fast; the visible structure is kept.
+    // Translate the plain-text body. Full-HTML translation of heavy
+    // newsletter templates is slow and token-hungry; extracting the text
+    // keeps the request small and the response fast.
     if (html && content) {
-        content = stripEmailNoise(content);
+        content = htmlToPlainText(content);
+        html = false;
     }
 
     if (content === undefined) {
@@ -97,15 +99,24 @@ async function translateEmail(
     }
 }
 
-// Remove style/script blocks, conditional comments and tracking images from
-// the HTML before sending it to the translation API. Keeps the visible
-// structure (tables, divs, inline text) intact.
-function stripEmailNoise(html: string): string {
+// Extract visible plain text from an HTML mail body. Block-level tags become
+// line breaks so paragraphs survive; everything else is stripped.
+function htmlToPlainText(html: string): string {
     return html
-        .replace(/<style[\s\S]*?<\/style>/gi, "")
-        .replace(/<script[\s\S]*?<\/script>/gi, "")
-        .replace(/<!--[\s\S]*?-->/g, "")
-        .replace(/<img\b[^>]*>/gi, "");
+        .replace(/<style[\s\S]*?<\/style>/gi, " ")
+        .replace(/<script[\s\S]*?<\/script>/gi, " ")
+        .replace(/<!--[\s\S]*?-->/g, " ")
+        .replace(/<(p|div|tr|li|h[1-6]|br|table)[^>]*>/gi, "\n")
+        .replace(/<[^>]+>/g, "")
+        .replace(/&nbsp;/gi, " ")
+        .replace(/&amp;/gi, "&")
+        .replace(/&lt;/gi, "<")
+        .replace(/&gt;/gi, ">")
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;/gi, "'")
+        .replace(/[ \t]+\n/g, "\n")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
 }
 
 function extractTextFromMessage(fullMessage: messenger.messages.MessagePart): {
