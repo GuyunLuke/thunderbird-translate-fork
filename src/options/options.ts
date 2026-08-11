@@ -25,9 +25,6 @@ async function applyI18n(): Promise<void> {
   });
 }
 
-const DEFAULT_MODEL_GEMINI = "gemini-2.0-flash-exp";
-const DEFAULT_MODEL_DEEPSEEK = "deepseek-v4-flash";
-const DEFAULT_MODEL_OPENAI = "gpt-4o-mini";
 const DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1";
 const DEFAULT_DEEPSEEK_BASE_URL = "https://api.deepseek.com";
 
@@ -60,16 +57,6 @@ function currentMode(): string {
   return apiModeSelect.value;
 }
 
-function defaultModelFor(mode: string): string {
-  if (mode === "deepseek") {
-    return DEFAULT_MODEL_DEEPSEEK;
-  }
-  if (mode === "openai") {
-    return DEFAULT_MODEL_OPENAI;
-  }
-  return DEFAULT_MODEL_GEMINI;
-}
-
 async function showStatus(key: string, color: string): Promise<void> {
   statusPar.textContent = await getMessage(key);
   statusPar.style.color = color;
@@ -83,24 +70,27 @@ async function loadKeyForMode(mode: string): Promise<void> {
   apiKeyInput.value = storage[API_KEY_STORAGE_KEY[mode]] || "";
 }
 
-// Fill the model dropdown. Keeps the current selection when it is still
-// available, otherwise selects the first entry.
+// Fill the model dropdown with probed models only. Keeps the current
+// selection when it is still available, otherwise selects the first entry.
+// An empty list leaves the dropdown empty: never show a model that has not
+// been probed for the active provider.
 function fillModelList(models: string[], mode: string): void {
   const previous = modelSelect.value;
-  const names = models.length ? models : [defaultModelFor(mode)];
-
   modelSelect.innerHTML = "";
-  for (const name of names) {
+  if (!models.length) {
+    return;
+  }
+  for (const name of models) {
     const option = document.createElement("option");
     option.value = name;
     option.textContent = name;
     modelSelect.appendChild(option);
   }
 
-  if (previous && names.includes(previous)) {
+  if (previous && models.includes(previous)) {
     modelSelect.value = previous;
   } else {
-    modelSelect.value = names[0];
+    modelSelect.value = models[0];
   }
 }
 
@@ -125,10 +115,9 @@ async function updateModeUI(): Promise<void> {
   apiKeyLabel.textContent =
     `${providerNames[mode]} ${await getMessage("apiKey")}`;
 
-  // show the default model until the provider list is probed
-  if (!modelSelect.options.length) {
-    fillModelList([], mode);
-  }
+  // clear the model dropdown so the previous provider's models never leak
+  // into the active provider
+  modelSelect.innerHTML = "";
 
   await loadKeyForMode(mode);
 }
@@ -284,10 +273,13 @@ testButton.onclick = async () => {
     }
 
     if (response?.ok) {
-      // Save all settings if the test succeeds
+      // Save all settings if the test succeeds; an empty model selection
+      // keeps the previously saved model for this provider
       await messenger.storage.local.set({
         [API_KEY_STORAGE_KEY[mode]]: apiKey,
-        [MODEL_STORAGE_KEY[mode]]: modelSelect.value,
+        ...(modelSelect.value
+          ? { [MODEL_STORAGE_KEY[mode]]: modelSelect.value }
+          : {}),
         apiMode: mode,
         // only the OpenAI-compatible mode has a custom base URL
         baseUrl: mode === "openai" ? baseUrlInput.value.trim() : "",

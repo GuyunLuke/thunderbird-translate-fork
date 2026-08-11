@@ -16,6 +16,27 @@ select {
     box-sizing: border-box;
 }
 
+/* language switcher: visually distinct from the form controls */
+#langRow {
+    text-align: right;
+    margin-bottom: 16px;
+}
+
+#langRow label {
+    display: inline;
+    margin-right: 8px;
+    font-size: 12px;
+    color: #666;
+}
+
+#langRow select {
+    width: auto;
+    display: inline-block;
+    margin-bottom: 0;
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
 button {
     padding: 10px 20px;
     background-color: #0078d7;
