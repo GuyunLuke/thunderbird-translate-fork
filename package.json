@@ -1,13 +1,13 @@
 {
-    "name": "thunderbird-translate",
+    "name": "thunderbird-translate-fork",
     "version": "1.1",
     "description": "A translation add-on which uses the Gemini API to translate your mails in one click.",
     "scripts": {
         "clean": "rimraf dist web-ext-artifacts",
         "build:dev": "cross-env NODE_ENV=dev ts-node scripts/build.ts",
         "build:prod": "cross-env NODE_ENV=prod ts-node scripts/build.ts",
-        "build:web-ext": "npm run build:prod && web-ext build --source-dir=dist --overwrite-dest -n thunderbird-translate.xpi",
-        "build:xpi": "npm run build:prod && cd dist && zip -oX -r ../thunderbird-translate.xpi * && cd ..",
+        "build:web-ext": "npm run build:prod && web-ext build --source-dir=dist --overwrite-dest -n thunderbird-translate-fork.xpi",
+        "build:xpi": "npm run build:prod && cd dist && zip -oX -r ../thunderbird-translate-fork.xpi * && cd ..",
         "dev": "tsc -w"
     },
     "devDependencies": {

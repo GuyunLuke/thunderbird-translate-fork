@@ -1,9 +1,9 @@
 {
 	"extensionName": {
-		"message": "Thunderbird Translate"
+		"message": "Thunderbird Translate Fork"
 	},
 	"extensionDescription": {
-		"message": "A translation add-on which uses the Gemini API to translate you mails in one click."
+		"message": "A translation add-on for your mails in one click. Supports Google Gemini, DeepSeek, and any OpenAI-compatible endpoint."
 	},
 	"translateButton": {
 		"message": "Translate"

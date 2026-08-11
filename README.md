@@ -1,4 +1,6 @@
-# ![Thunderbird Translate icon](/src/assets/icon-32.png) [Thunderbird Translate](https://github.com/sully-vian/thunderbird-translate)
+# ![Thunderbird Translate icon](/src/assets/icon-32.png) [Thunderbird Translate Fork](https://github.com/GuyunLuke/thunderbird-translate)
+
+A fork of [sully-vian/thunderbird-translate](https://github.com/sully-vian/thunderbird-translate) with configurable models and additional translation providers (DeepSeek, any OpenAI-compatible endpoint).
 
 Thunderbird Translate adds a one-click translation banner to messages in Thunderbird. Translate an email's body (html or plain text) using the Gemini API (or any OpenAI-compatible endpoint) and show the translated result at the top of the message.
 

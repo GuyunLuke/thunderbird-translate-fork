@@ -1,13 +1,13 @@
 {
 	"manifest_version": 2,
-	"name": "Thunderbird Translate",
-	"description": "A translation add-on which uses the Gemini API to translate your mails in one click.",
+	"name": "__MSG_extensionName__",
+	"description": "__MSG_extensionDescription__",
 	"version": "1.1",
-	"author": "sully-vian",
+	"author": "guyunluke",
 	"default_locale": "en",
 	"applications": {
 		"gecko": {
-			"id": "thunderbird-translate@sully-vian",
+			"id": "thunderbird-translate-fork@guyunluke",
 			"strict_min_version": "78.0"
 		}
 	},
