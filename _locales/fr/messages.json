@@ -94,5 +94,8 @@
     },
     "targetAuto": {
         "message": "Auto (selon la langue de l’interface)"
+    },
+    "baseUrlHint": {
+        "message": "Ne saisissez que l’adresse d’un service de confiance - votre clé API lui sera envoyée."
     }
 }

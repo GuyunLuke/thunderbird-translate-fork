@@ -15,8 +15,7 @@
 		"allowJs": false,
 		"noEmitOnError": true,
 		"types": [
-			"@types/thunderbird-webext-browser",
-			"dompurify"
+			"@types/thunderbird-webext-browser"
 		]
 	},
 	"include": [

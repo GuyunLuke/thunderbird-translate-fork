@@ -94,5 +94,8 @@
     },
     "targetAuto": {
         "message": "Auto (follow UI language)"
+    },
+    "baseUrlHint": {
+        "message": "Only enter the address of a service you trust - your API key will be sent to it."
     }
 }

@@ -16,6 +16,14 @@ select {
     box-sizing: border-box;
 }
 
+/* small helper text under an input */
+.hint {
+    font-size: 12px;
+    color: #666;
+    margin-top: -8px;
+    margin-bottom: 12px;
+}
+
 /* language/target switchers: visually distinct from the form controls */
 .lang-row {
     text-align: right;
