@@ -332,9 +332,12 @@ async function callOpenAICompatible(
     text: string,
     config: TranslationConfig,
 ): Promise<string> {
-    const isDeepSeek = config.apiMode === "deepseek";
     // DeepSeek mode always uses the official endpoint; custom endpoints go
-    // through the OpenAI-compatible mode
+    // through the OpenAI-compatible mode. Also match the domain so a custom
+    // setup pointing at DeepSeek gets the thinking parameter too.
+    const isDeepSeek =
+        config.apiMode === "deepseek" ||
+        (config.baseUrl || "").includes("api.deepseek.com");
     const baseUrl = isDeepSeek
         ? DEFAULT_DEEPSEEK_BASE_URL
         : (config.baseUrl || DEFAULT_OPENAI_BASE_URL).replace(/\/+$/, "");
