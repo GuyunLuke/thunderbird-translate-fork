@@ -44,6 +44,7 @@ const MODEL_STORAGE_KEY: Record<string, string> = {
 };
 
 const langSelect = document.getElementById("langSelect") as HTMLSelectElement;
+const targetSelect = document.getElementById("targetSelect") as HTMLSelectElement;
 const apiKeyInput = document.getElementById("apiKeyInput") as HTMLInputElement;
 const apiKeyLabel = document.getElementById("apiKeyLabel") as HTMLLabelElement;
 const apiModeSelect = document.getElementById("apiModeSelect") as HTMLSelectElement;
@@ -281,6 +282,7 @@ testButton.onclick = async () => {
           ? { [MODEL_STORAGE_KEY[mode]]: modelSelect.value }
           : {}),
         apiMode: mode,
+        targetLang: targetSelect.value,
         // only the OpenAI-compatible mode has a custom base URL
         baseUrl: mode === "openai" ? baseUrlInput.value.trim() : "",
       });
@@ -307,9 +309,11 @@ testButton.onclick = async () => {
     "modelOpenAI",
     "baseUrl",
     "language",
+    "targetLang",
   ]);
   const language = await getLanguage();
   langSelect.value = language;
+  targetSelect.value = storage.targetLang || "auto";
   await applyI18n();
 
   if (storage.apiMode === "openai" || storage.apiMode === "deepseek") {

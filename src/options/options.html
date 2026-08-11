@@ -10,9 +10,18 @@
 
 <body>
 	<h1 data-i18n="settingsTitle">Thunderbird Translate Fork Settings</h1>
-	<div id="langRow">
+	<div class="lang-row">
 		<label for="langSelect" data-i18n="language">Language</label>
 		<select id="langSelect" class="lang-select">
+			<option value="zh_CN">中文</option>
+			<option value="en">English</option>
+			<option value="fr">Français</option>
+		</select>
+	</div>
+	<div class="lang-row">
+		<label for="targetSelect" data-i18n="targetLanguage">Target language</label>
+		<select id="targetSelect" class="lang-select">
+			<option value="auto" data-i18n="targetAuto">Auto (follow UI language)</option>
 			<option value="zh_CN">中文</option>
 			<option value="en">English</option>
 			<option value="fr">Français</option>

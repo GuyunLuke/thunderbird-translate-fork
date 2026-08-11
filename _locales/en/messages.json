@@ -88,5 +88,11 @@
     },
     "language": {
         "message": "Language"
+    },
+    "targetLanguage": {
+        "message": "Target language"
+    },
+    "targetAuto": {
+        "message": "Auto (follow UI language)"
     }
 }

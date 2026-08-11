@@ -88,5 +88,11 @@
     },
     "language": {
         "message": "Langue"
+    },
+    "targetLanguage": {
+        "message": "Langue cible"
+    },
+    "targetAuto": {
+        "message": "Auto (selon la langue de l’interface)"
     }
 }

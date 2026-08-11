@@ -199,9 +199,15 @@ const MODEL_STORAGE_KEY: Record<ApiMode, string> = {
 };
 
 async function translationSystemPrompt(): Promise<string> {
-    const lang = await getLanguage();
+    const storage = await browser.storage.local.get("targetLang");
+    // "auto" (default) follows the add-on's UI language, like the original
+    // add-on did with browser.i18n.getUILanguage()
+    const target =
+        !storage.targetLang || storage.targetLang === "auto"
+            ? await getLanguage()
+            : storage.targetLang;
     return `
-You are a professional translator. Translate the following email to ${lang}.
+You are a professional translator. Translate the following email to ${target}.
 
 CRITICAL RULES:
 - If the content contains HTML tags, preserve ALL HTML structure exactly
