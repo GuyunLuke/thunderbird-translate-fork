@@ -42,7 +42,13 @@ async function translateEmail(
     tabID: number,
 ): Promise<void> {
     const fullMessage = await messenger.messages.getFull(message.id);
-    const { content, html } = extractTextFromMessage(fullMessage);
+    let { content, html } = extractTextFromMessage(fullMessage);
+
+    // Strip styling/scripts/tracking noise before sending so the translation
+    // request stays small and fast; the visible structure is kept.
+    if (html && content) {
+        content = stripEmailNoise(content);
+    }
 
     if (content === undefined) {
         console.warn("Failed to get message content");
@@ -89,6 +95,17 @@ async function translateEmail(
             })
             .catch(() => {});
     }
+}
+
+// Remove style/script blocks, conditional comments and tracking images from
+// the HTML before sending it to the translation API. Keeps the visible
+// structure (tables, divs, inline text) intact.
+function stripEmailNoise(html: string): string {
+    return html
+        .replace(/<style[\s\S]*?<\/style>/gi, "")
+        .replace(/<script[\s\S]*?<\/script>/gi, "")
+        .replace(/<!--[\s\S]*?-->/g, "")
+        .replace(/<img\b[^>]*>/gi, "");
 }
 
 function extractTextFromMessage(fullMessage: messenger.messages.MessagePart): {
