@@ -1,4 +1,4 @@
-# ![Thunderbird Translate icon](/src/assets/icon-32.png) [Thunderbird Translate Fork](https://github.com/GuyunLuke/thunderbird-translate)
+# ![Thunderbird Translate icon](/src/assets/icon-32.png) [Thunderbird Translate Fork](https://github.com/GuyunLuke/thunderbird-translate-fork)
 
 A fork of [sully-vian/thunderbird-translate](https://github.com/sully-vian/thunderbird-translate) with configurable models and additional translation providers (DeepSeek, any OpenAI-compatible endpoint).
 

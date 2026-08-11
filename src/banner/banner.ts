@@ -4,7 +4,7 @@ let bannerTemplate: string | null;
 browser.runtime.onMessage.addListener((message) => {
   if (message.action === "showLoading") {
     bannerTemplate = message.bannerTemplate;
-    showBanner("Translation Loading...", "success", false);
+    showBanner(browser.i18n.getMessage("loadingMessage"), "success", false);
   }
   if (message.action === "showBanner") {
     const { content, status, html } = message;
@@ -36,6 +36,7 @@ async function showBanner(content: string, status: string, html: boolean) {
   const settingsLink = banner.querySelector(
     "#settings-link",
   ) as HTMLLinkElement;
+  settingsLink.textContent = browser.i18n.getMessage("openSettings");
   settingsLink.onclick = (event) => {
     event.preventDefault();
     browser.runtime.sendMessage({ action: "openOptionsPage" });

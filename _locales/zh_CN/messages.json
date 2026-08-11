@@ -1,0 +1,89 @@
+{
+	"extensionName": {
+		"message": "Thunderbird Translate Fork"
+	},
+	"extensionDescription": {
+		"message": "一键翻译邮件的扩展。支持 Google Gemini、DeepSeek 及任意 OpenAI 兼容端点。"
+	},
+	"translateButton": {
+		"message": "翻译"
+	},
+	"loadingMessage": {
+		"message": "翻译中…"
+	},
+	"settingsTitle": {
+		"message": "Thunderbird Translate Fork 设置"
+	},
+	"apiProvider": {
+		"message": "API 提供商"
+	},
+	"providerGemini": {
+		"message": "Google Gemini"
+	},
+	"providerDeepSeek": {
+		"message": "DeepSeek"
+	},
+	"providerOpenAI": {
+		"message": "OpenAI 兼容"
+	},
+	"model": {
+		"message": "模型"
+	},
+	"modelPlaceholderGemini": {
+		"message": "例如 gemini-2.0-flash-exp"
+	},
+	"modelPlaceholderDeepSeek": {
+		"message": "例如 deepseek-v4-flash、deepseek-v4-pro"
+	},
+	"modelPlaceholderOpenAI": {
+		"message": "例如 gpt-4o-mini 或你服务商的模型"
+	},
+	"baseUrl": {
+		"message": "Base URL（OpenAI 兼容）"
+	},
+	"apiKey": {
+		"message": "API 密钥"
+	},
+	"apiKeyPlaceholder": {
+		"message": "输入你的 API 密钥"
+	},
+	"saveTest": {
+		"message": "保存并测试"
+	},
+	"enterApiKey": {
+		"message": "请输入有效的 API 密钥。"
+	},
+	"settingsSaved": {
+		"message": "设置保存成功！"
+	},
+	"invalidKeyOrEndpoint": {
+		"message": "API 密钥或端点无效，请重试。"
+	},
+	"testError": {
+		"message": "发生错误，请重试。"
+	},
+	"apiKeyMissing": {
+		"message": "未设置 API 密钥，请在扩展设置中配置。"
+	},
+	"requestTimedOut": {
+		"message": "翻译请求超时，请检查端点与网络。"
+	},
+	"translationApiError": {
+		"message": "翻译失败：API 返回异常。"
+	},
+	"failedToGetContent": {
+		"message": "无法获取邮件内容。"
+	},
+	"unexpectedError": {
+		"message": "翻译过程中发生意外错误"
+	},
+	"openSettings": {
+		"message": "打开设置"
+	},
+	"privacyNoticeTitle": {
+		"message": "隐私说明"
+	},
+	"privacyNoticeBody": {
+		"message": "请求翻译时，我们只把邮件正文（HTML 源码，没有则用纯文本）发送给你配置的翻译服务商用于翻译。不会发送账号凭据、邮件头、收件人、主题、附件或任何邮箱元数据。你填写的 API 密钥保存在扩展本地存储（browser.storage.local）中，仅用于向配置的服务商验证请求。HTML 标记会保留以维持邮件结构；URL 和邮箱地址属于发送内容的一部分，但会被要求不得改动。如需完全隐私，请勿翻译敏感或机密内容。"
+	}
+}

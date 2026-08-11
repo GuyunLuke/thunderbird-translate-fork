@@ -11,10 +11,79 @@
     "loadingMessage": {
         "message": "Traduction en cours..."
     },
-    "invalidApiKey": {
-        "message": "Clé API invalide. Veuillez réessayer."
+    "settingsTitle": {
+        "message": "Réglages Thunderbird Traduction Fork"
     },
-    "apiKeySaved": {
-        "message": "Clé API enregistrée avec succès !"
+    "apiProvider": {
+        "message": "Fournisseur d'API"
+    },
+    "providerGemini": {
+        "message": "Google Gemini"
+    },
+    "providerDeepSeek": {
+        "message": "DeepSeek"
+    },
+    "providerOpenAI": {
+        "message": "Compatible OpenAI"
+    },
+    "model": {
+        "message": "Modèle"
+    },
+    "modelPlaceholderGemini": {
+        "message": "p. ex. gemini-2.0-flash-exp"
+    },
+    "modelPlaceholderDeepSeek": {
+        "message": "p. ex. deepseek-v4-flash, deepseek-v4-pro"
+    },
+    "modelPlaceholderOpenAI": {
+        "message": "p. ex. gpt-4o-mini ou le modèle de votre fournisseur"
+    },
+    "baseUrl": {
+        "message": "URL de base (compatible OpenAI)"
+    },
+    "apiKey": {
+        "message": "Clé API"
+    },
+    "apiKeyPlaceholder": {
+        "message": "Saisissez votre clé API"
+    },
+    "saveTest": {
+        "message": "Enregistrer et tester"
+    },
+    "enterApiKey": {
+        "message": "Veuillez saisir une clé API valide."
+    },
+    "settingsSaved": {
+        "message": "Paramètres enregistrés avec succès !"
+    },
+    "invalidKeyOrEndpoint": {
+        "message": "Clé API ou point de terminaison invalide. Veuillez réessayer."
+    },
+    "testError": {
+        "message": "Une erreur est survenue. Veuillez réessayer."
+    },
+    "apiKeyMissing": {
+        "message": "La clé API n'est pas définie. Veuillez la configurer dans les paramètres de l'extension."
+    },
+    "requestTimedOut": {
+        "message": "La demande de traduction a expiré. Vérifiez le point de terminaison et votre réseau."
+    },
+    "translationApiError": {
+        "message": "Échec de la traduction en raison d'une erreur API."
+    },
+    "failedToGetContent": {
+        "message": "Impossible d'obtenir le contenu du courriel."
+    },
+    "unexpectedError": {
+        "message": "Une erreur inattendue est survenue lors de la traduction"
+    },
+    "openSettings": {
+        "message": "Ouvrir les paramètres"
+    },
+    "privacyNoticeTitle": {
+        "message": "Avis de confidentialité"
+    },
+    "privacyNoticeBody": {
+        "message": "Lorsque vous demandez une traduction, nous envoyons uniquement le corps du message (la source HTML ou, à défaut, le texte brut) au fournisseur de traduction configuré. Nous n'envoyons ni vos identifiants, ni les en-têtes, destinataires, objets, pièces jointes ou autres métadonnées de la boîte aux lettres. La clé API saisie est stockée localement dans l'extension (browser.storage.local) et sert uniquement à authentifier les requêtes vers le fournisseur configuré. Le balisage HTML est inclus pour préserver la structure ; les URL et adresses e-mail font partie du contenu envoyé mais ne doivent pas être modifiées. Ne traduisez pas de contenu sensible ou confidentiel si vous exigez une confidentialité totale."
     }
 }

@@ -22,10 +22,12 @@ messenger.messageDisplayAction.onClicked.addListener(async (tab) => {
         console.warn("No tab ID.");
         return;
     }
-    messenger.tabs.sendMessage(tab.id, {
-        action: "showLoading",
-        bannerTemplate: sanitizedBannerHTML,
-    });
+    messenger.tabs
+        .sendMessage(tab.id, {
+            action: "showLoading",
+            bannerTemplate: sanitizedBannerHTML,
+        })
+        .catch(() => {});
     const message = await messenger.messageDisplay.getDisplayedMessage(tab.id);
     if (message == null) {
         console.warn("Failed to get displayed message.");
@@ -43,12 +45,14 @@ async function translateEmail(
 
     if (content === undefined) {
         console.warn("Failed to get message content");
-        messenger.tabs.sendMessage(tabID, {
-            action: "showBanner",
-            content: "Failed to get email content.",
-            status: "error",
-            html: false,
-        });
+        messenger.tabs
+            .sendMessage(tabID, {
+                action: "showBanner",
+                content: browser.i18n.getMessage("failedToGetContent"),
+                status: "error",
+                html: false,
+            })
+            .catch(() => {});
         return;
     }
 
@@ -59,26 +63,30 @@ async function translateEmail(
         }
 
         // Send a message to the content script to display the banner
-        messenger.tabs.sendMessage(tabID, {
-            action: "showBanner",
-            content: translatedContent,
-            status: "success",
-            html: html,
-        });
+        messenger.tabs
+            .sendMessage(tabID, {
+                action: "showBanner",
+                content: translatedContent,
+                status: "success",
+                html: html,
+            })
+            .catch(() => {});
     } catch (error) {
         console.warn("Translation failed:", error);
         const errorMessage =
             error instanceof Error
                 ? error.message
-                : "An unexpected error occured during translation";
+                : browser.i18n.getMessage("unexpectedError");
 
         // send an error message to the content script
-        messenger.tabs.sendMessage(tabID, {
-            action: "showBanner",
-            content: errorMessage,
-            status: "error",
-            html: false,
-        });
+        messenger.tabs
+            .sendMessage(tabID, {
+                action: "showBanner",
+                content: errorMessage,
+                status: "error",
+                html: false,
+            })
+            .catch(() => {});
     }
 }
 
@@ -139,10 +147,19 @@ browser.runtime.onMessage.addListener((message) => {
 });
 
 const DEFAULT_MODEL_GEMINI = "gemini-2.0-flash-exp";
-const DEFAULT_MODEL_OPENAI = "gpt-4o-mini";
 const DEFAULT_MODEL_DEEPSEEK = "deepseek-v4-flash";
+const DEFAULT_MODEL_OPENAI = "gpt-4o-mini";
 const DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1";
 const DEFAULT_DEEPSEEK_BASE_URL = "https://api.deepseek.com";
+const FETCH_TIMEOUT_MS = 60000;
+
+type ApiMode = "gemini" | "deepseek" | "openai";
+
+const API_KEY_STORAGE_KEY: Record<ApiMode, string> = {
+    gemini: "apiKeyGemini",
+    deepseek: "apiKeyDeepSeek",
+    openai: "apiKeyOpenAI",
+};
 
 const translationSystemPrompt = `
 You are a professional translator. Translate the following email to ${browser.i18n.getUILanguage()}.
@@ -156,26 +173,23 @@ CRITICAL RULES:
 
 interface TranslationConfig {
     apiKey: string;
-    apiMode: "gemini" | "openai" | "deepseek";
+    apiMode: ApiMode;
     model?: string;
     baseUrl?: string;
 }
 
 async function getTranslationConfig(): Promise<TranslationConfig> {
     const storage = await browser.storage.local.get([
-        "apiKey",
         "apiMode",
         "model",
         "baseUrl",
+        "apiKeyGemini",
+        "apiKeyDeepSeek",
+        "apiKeyOpenAI",
+        "apiKey",
     ]);
 
-    if (!storage.apiKey) {
-        throw new Error(
-            "API key is not set. Please configure it in the add-on's settings.",
-        );
-    }
-
-    let apiMode: "gemini" | "openai" | "deepseek";
+    let apiMode: ApiMode;
     if (storage.apiMode === "deepseek") {
         apiMode = "deepseek";
     } else if (storage.apiMode === "openai") {
@@ -184,8 +198,18 @@ async function getTranslationConfig(): Promise<TranslationConfig> {
         apiMode = "gemini";
     }
 
+    let apiKey: string = storage[API_KEY_STORAGE_KEY[apiMode]] || "";
+    // migrate the legacy single-key config to the Gemini slot
+    if (!apiKey && apiMode === "gemini" && storage.apiKey) {
+        apiKey = storage.apiKey;
+    }
+
+    if (!apiKey) {
+        throw new Error(browser.i18n.getMessage("apiKeyMissing"));
+    }
+
     return {
-        apiKey: storage.apiKey,
+        apiKey,
         apiMode,
         model: storage.model,
         baseUrl: storage.baseUrl,
@@ -201,6 +225,25 @@ async function callTranslationAPI(text: string): Promise<string> {
     return callOpenAICompatible(text, config);
 }
 
+async function fetchWithTimeout(
+    url: string,
+    init: RequestInit = {},
+    timeoutMs: number = FETCH_TIMEOUT_MS,
+): Promise<Response> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        return await fetch(url, { ...init, signal: controller.signal });
+    } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+            throw new Error(browser.i18n.getMessage("requestTimedOut"));
+        }
+        throw error;
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
 async function callGemini(
     text: string,
     config: TranslationConfig,
@@ -213,7 +256,7 @@ async function callGemini(
 
     const requestBody = { contents: [{ parts: [{ text: fullPrompt }] }] };
 
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -229,7 +272,7 @@ async function callGemini(
     const data = await response.json();
 
     if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
-        throw new Error("Translation failed due to an API error.");
+        throw new Error(browser.i18n.getMessage("translationApiError"));
     }
 
     return data.candidates[0].content.parts[0].text;
@@ -240,12 +283,12 @@ async function callOpenAICompatible(
     config: TranslationConfig,
 ): Promise<string> {
     const isDeepSeek = config.apiMode === "deepseek";
-    const defaultBaseUrl = isDeepSeek
+    // DeepSeek mode always uses the official endpoint; custom endpoints go
+    // through the OpenAI-compatible mode
+    const baseUrl = isDeepSeek
         ? DEFAULT_DEEPSEEK_BASE_URL
-        : DEFAULT_OPENAI_BASE_URL;
+        : (config.baseUrl || DEFAULT_OPENAI_BASE_URL).replace(/\/+$/, "");
     const defaultModel = isDeepSeek ? DEFAULT_MODEL_DEEPSEEK : DEFAULT_MODEL_OPENAI;
-
-    const baseUrl = (config.baseUrl || defaultBaseUrl).replace(/\/+$/, "");
     const model = config.model || defaultModel;
     const url = `${baseUrl}/chat/completions`;
 
@@ -257,7 +300,7 @@ async function callOpenAICompatible(
         ],
     };
 
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -273,9 +316,18 @@ async function callOpenAICompatible(
 
     const data = await response.json();
 
-    if (!data.choices?.[0]?.message?.content) {
-        throw new Error("Translation failed due to an API error.");
+    // Some reasoning models return content as a list of parts
+    const rawContent = data.choices?.[0]?.message?.content;
+    let content = rawContent;
+    if (Array.isArray(rawContent)) {
+        content = rawContent
+            .map((part: { text?: string }) => part.text ?? "")
+            .join("");
     }
 
-    return data.choices[0].message.content;
+    if (!content) {
+        throw new Error(browser.i18n.getMessage("translationApiError"));
+    }
+
+    return content;
 }
