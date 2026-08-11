@@ -1,89 +1,92 @@
 {
-	"extensionName": {
-		"message": "Thunderbird Translate Fork"
-	},
-	"extensionDescription": {
-		"message": "A translation add-on for your mails in one click. Supports Google Gemini, DeepSeek, and any OpenAI-compatible endpoint."
-	},
-	"translateButton": {
-		"message": "Translate"
-	},
-	"loadingMessage": {
-		"message": "Translating..."
-	},
-	"settingsTitle": {
-		"message": "Thunderbird Translate Fork Settings"
-	},
-	"apiProvider": {
-		"message": "API Provider"
-	},
-	"providerGemini": {
-		"message": "Google Gemini"
-	},
-	"providerDeepSeek": {
-		"message": "DeepSeek"
-	},
-	"providerOpenAI": {
-		"message": "OpenAI-compatible"
-	},
-	"model": {
-		"message": "Model"
-	},
-	"modelPlaceholderGemini": {
-		"message": "e.g. gemini-2.0-flash-exp"
-	},
-	"modelPlaceholderDeepSeek": {
-		"message": "e.g. deepseek-v4-flash, deepseek-v4-pro"
-	},
-	"modelPlaceholderOpenAI": {
-		"message": "e.g. gpt-4o-mini or your provider's model"
-	},
-	"baseUrl": {
-		"message": "Base URL (OpenAI-compatible)"
-	},
-	"apiKey": {
-		"message": "API Key"
-	},
-	"apiKeyPlaceholder": {
-		"message": "Enter your API key"
-	},
-	"saveTest": {
-		"message": "Save & Test"
-	},
-	"enterApiKey": {
-		"message": "Please enter a valid API key."
-	},
-	"settingsSaved": {
-		"message": "Settings saved successfully!"
-	},
-	"invalidKeyOrEndpoint": {
-		"message": "Invalid API key or endpoint. Please try again."
-	},
-	"testError": {
-		"message": "An error occurred. Please try again."
-	},
-	"apiKeyMissing": {
-		"message": "API key is not set. Please configure it in the add-on's settings."
-	},
-	"requestTimedOut": {
-		"message": "The translation request timed out. Please check the endpoint and your network."
-	},
-	"translationApiError": {
-		"message": "Translation failed due to an API error."
-	},
-	"failedToGetContent": {
-		"message": "Failed to get email content."
-	},
-	"unexpectedError": {
-		"message": "An unexpected error occured during translation"
-	},
-	"openSettings": {
-		"message": "Open Settings"
-	},
-	"privacyNoticeTitle": {
-		"message": "Privacy notice"
-	},
-	"privacyNoticeBody": {
-		"message": "When you request a translation we send only the email message body (the HTML source or, if not available, the plain-text body) to the translation provider you configured to produce the translation. We do not send your account credentials, mailbox headers, recipients, subject, attachments, or other mailbox metadata. The API key you enter is stored locally in the add-on (browser.storage.local) and is used solely to authenticate requests to the configured provider. HTML markup is included so structure can be preserved; URLs and email addresses are part of the sent content but are instructed not to be altered. Do not translate sensitive or confidential content if you require full privacy."
-	}
+    "extensionName": {
+        "message": "Thunderbird Translate Fork"
+    },
+    "extensionDescription": {
+        "message": "A translation add-on for your mails in one click. Supports Google Gemini, DeepSeek, and any OpenAI-compatible endpoint."
+    },
+    "translateButton": {
+        "message": "Translate"
+    },
+    "loadingMessage": {
+        "message": "Translating..."
+    },
+    "settingsTitle": {
+        "message": "Thunderbird Translate Fork Settings"
+    },
+    "apiProvider": {
+        "message": "API Provider"
+    },
+    "providerGemini": {
+        "message": "Google Gemini"
+    },
+    "providerDeepSeek": {
+        "message": "DeepSeek"
+    },
+    "providerOpenAI": {
+        "message": "OpenAI-compatible"
+    },
+    "model": {
+        "message": "Model"
+    },
+    "modelPlaceholderGemini": {
+        "message": "e.g. gemini-2.0-flash-exp"
+    },
+    "modelPlaceholderDeepSeek": {
+        "message": "e.g. deepseek-v4-flash, deepseek-v4-pro"
+    },
+    "modelPlaceholderOpenAI": {
+        "message": "e.g. gpt-4o-mini or your provider's model"
+    },
+    "baseUrl": {
+        "message": "Base URL (OpenAI-compatible)"
+    },
+    "apiKey": {
+        "message": "API Key"
+    },
+    "apiKeyPlaceholder": {
+        "message": "Enter your API key"
+    },
+    "saveTest": {
+        "message": "Save & Test"
+    },
+    "enterApiKey": {
+        "message": "Please enter a valid API key."
+    },
+    "settingsSaved": {
+        "message": "Settings saved successfully!"
+    },
+    "invalidKeyOrEndpoint": {
+        "message": "Invalid API key or endpoint. Please try again."
+    },
+    "testError": {
+        "message": "An error occurred. Please try again."
+    },
+    "apiKeyMissing": {
+        "message": "API key is not set. Please configure it in the add-on's settings."
+    },
+    "requestTimedOut": {
+        "message": "The translation request timed out. Please check the endpoint and your network."
+    },
+    "translationApiError": {
+        "message": "Translation failed due to an API error."
+    },
+    "failedToGetContent": {
+        "message": "Failed to get email content."
+    },
+    "unexpectedError": {
+        "message": "An unexpected error occured during translation"
+    },
+    "openSettings": {
+        "message": "Open Settings"
+    },
+    "privacyNoticeTitle": {
+        "message": "Privacy notice"
+    },
+    "privacyNoticeBody": {
+        "message": "When you request a translation we send only the email message body (the HTML source or, if not available, the plain-text body) to the translation provider you configured to produce the translation. We do not send your account credentials, mailbox headers, recipients, subject, attachments, or other mailbox metadata. The API key you enter is stored locally in the add-on (browser.storage.local) and is used solely to authenticate requests to the configured provider. HTML markup is included so structure can be preserved; URLs and email addresses are part of the sent content but are instructed not to be altered. Do not translate sensitive or confidential content if you require full privacy."
+    },
+    "language": {
+        "message": "Language"
+    }
 }

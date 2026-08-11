@@ -1,4 +1,5 @@
 import DOMPurify from "dompurify";
+import { getLanguage, getMessage } from "../i18n";
 
 if (messenger === undefined) {
     console.warn("Messenger API not available!");
@@ -48,7 +49,7 @@ async function translateEmail(
         messenger.tabs
             .sendMessage(tabID, {
                 action: "showBanner",
-                content: browser.i18n.getMessage("failedToGetContent"),
+                content: await getMessage("failedToGetContent"),
                 status: "error",
                 html: false,
             })
@@ -76,7 +77,7 @@ async function translateEmail(
         const errorMessage =
             error instanceof Error
                 ? error.message
-                : browser.i18n.getMessage("unexpectedError");
+                : await getMessage("unexpectedError");
 
         // send an error message to the content script
         messenger.tabs
@@ -161,8 +162,10 @@ const API_KEY_STORAGE_KEY: Record<ApiMode, string> = {
     openai: "apiKeyOpenAI",
 };
 
-const translationSystemPrompt = `
-You are a professional translator. Translate the following email to ${browser.i18n.getUILanguage()}.
+async function translationSystemPrompt(): Promise<string> {
+    const lang = await getLanguage();
+    return `
+You are a professional translator. Translate the following email to ${lang}.
 
 CRITICAL RULES:
 - If the content contains HTML tags, preserve ALL HTML structure exactly
@@ -170,6 +173,7 @@ CRITICAL RULES:
 - Do NOT add explanations, commentary, or markdown formatting
 - Return ONLY the translated content
 `;
+}
 
 interface TranslationConfig {
     apiKey: string;
@@ -205,7 +209,7 @@ async function getTranslationConfig(): Promise<TranslationConfig> {
     }
 
     if (!apiKey) {
-        throw new Error(browser.i18n.getMessage("apiKeyMissing"));
+        throw new Error(await getMessage("apiKeyMissing"));
     }
 
     return {
@@ -236,7 +240,7 @@ async function fetchWithTimeout(
         return await fetch(url, { ...init, signal: controller.signal });
     } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") {
-            throw new Error(browser.i18n.getMessage("requestTimedOut"));
+            throw new Error(await getMessage("requestTimedOut"));
         }
         throw error;
     } finally {
@@ -249,7 +253,8 @@ async function callGemini(
     config: TranslationConfig,
 ): Promise<string> {
     const model = config.model || DEFAULT_MODEL_GEMINI;
-    const fullPrompt = translationSystemPrompt + "\n\nContent to translate:\n" + text;
+    const fullPrompt =
+        (await translationSystemPrompt()) + "\n\nContent to translate:\n" + text;
     console.debug(fullPrompt);
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${config.apiKey}`;
@@ -272,7 +277,7 @@ async function callGemini(
     const data = await response.json();
 
     if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
-        throw new Error(browser.i18n.getMessage("translationApiError"));
+        throw new Error(await getMessage("translationApiError"));
     }
 
     return data.candidates[0].content.parts[0].text;
@@ -295,7 +300,7 @@ async function callOpenAICompatible(
     const requestBody = {
         model: model,
         messages: [
-            { role: "system", content: translationSystemPrompt },
+            { role: "system", content: await translationSystemPrompt() },
             { role: "user", content: "Content to translate:\n" + text },
         ],
     };
@@ -326,7 +331,7 @@ async function callOpenAICompatible(
     }
 
     if (!content) {
-        throw new Error(browser.i18n.getMessage("translationApiError"));
+        throw new Error(await getMessage("translationApiError"));
     }
 
     return content;

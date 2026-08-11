@@ -1,10 +1,12 @@
+import { getMessage } from "../i18n";
+
 let bannerTemplate: string | null;
 
 // Listen for messages from the background script
-browser.runtime.onMessage.addListener((message) => {
+browser.runtime.onMessage.addListener(async (message) => {
   if (message.action === "showLoading") {
     bannerTemplate = message.bannerTemplate;
-    showBanner(browser.i18n.getMessage("loadingMessage"), "success", false);
+    showBanner(await getMessage("loadingMessage"), "success", false);
   }
   if (message.action === "showBanner") {
     const { content, status, html } = message;
@@ -36,7 +38,7 @@ async function showBanner(content: string, status: string, html: boolean) {
   const settingsLink = banner.querySelector(
     "#settings-link",
   ) as HTMLLinkElement;
-  settingsLink.textContent = browser.i18n.getMessage("openSettings");
+  settingsLink.textContent = await getMessage("openSettings");
   settingsLink.onclick = (event) => {
     event.preventDefault();
     browser.runtime.sendMessage({ action: "openOptionsPage" });

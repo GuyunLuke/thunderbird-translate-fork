@@ -1,3 +1,5 @@
+import { getMessage, getLanguage, setLanguage, Lang } from "../i18n";
+
 if (!browser) {
   console.warn('missing "browser"');
 } else if (!browser.storage) {
@@ -6,23 +8,22 @@ if (!browser) {
   console.warn('missing "browser.storage.local"');
 }
 
-// Thunderbird does not reliably substitute __MSG_ placeholders in options
-// pages, so we localize manually via data-i18n attributes.
-function applyI18n(): void {
-  document.querySelectorAll("[data-i18n]").forEach((el) => {
+// Localize every element carrying a data-i18n attribute. Re-run this after a
+// language switch to re-render the whole page.
+async function applyI18n(): Promise<void> {
+  document.querySelectorAll("[data-i18n]").forEach(async (el) => {
     const key = el.getAttribute("data-i18n");
     if (key) {
-      el.textContent = messenger.i18n.getMessage(key);
+      el.textContent = await getMessage(key);
     }
   });
-  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+  document.querySelectorAll("[data-i18n-placeholder]").forEach(async (el) => {
     const key = el.getAttribute("data-i18n-placeholder");
     if (key) {
-      (el as HTMLInputElement).placeholder = messenger.i18n.getMessage(key);
+      (el as HTMLInputElement).placeholder = await getMessage(key);
     }
   });
 }
-applyI18n();
 
 const DEFAULT_MODEL_GEMINI = "gemini-2.0-flash-exp";
 const DEFAULT_MODEL_DEEPSEEK = "deepseek-v4-flash";
@@ -37,6 +38,7 @@ const API_KEY_STORAGE_KEY: Record<string, string> = {
   openai: "apiKeyOpenAI",
 };
 
+const langSelect = document.getElementById("langSelect") as HTMLSelectElement;
 const apiKeyInput = document.getElementById("apiKeyInput") as HTMLInputElement;
 const apiKeyLabel = document.getElementById("apiKeyLabel") as HTMLLabelElement;
 const apiModeSelect = document.getElementById("apiModeSelect") as HTMLSelectElement;
@@ -60,8 +62,8 @@ function defaultModelFor(mode: string): string {
   return DEFAULT_MODEL_GEMINI;
 }
 
-function showStatus(text: string, color: string): void {
-  statusPar.textContent = text;
+async function showStatus(key: string, color: string): Promise<void> {
+  statusPar.textContent = await getMessage(key);
   statusPar.style.color = color;
   setTimeout(() => {
     statusPar.textContent = "";
@@ -108,12 +110,12 @@ async function updateModeUI(): Promise<void> {
 
   // label the key field with the active provider
   const providerNames: Record<string, string> = {
-    gemini: messenger.i18n.getMessage("providerGemini"),
-    deepseek: messenger.i18n.getMessage("providerDeepSeek"),
-    openai: messenger.i18n.getMessage("providerOpenAI"),
+    gemini: await getMessage("providerGemini"),
+    deepseek: await getMessage("providerDeepSeek"),
+    openai: await getMessage("providerOpenAI"),
   };
   apiKeyLabel.textContent =
-    `${providerNames[mode]} ${messenger.i18n.getMessage("apiKey")}`;
+    `${providerNames[mode]} ${await getMessage("apiKey")}`;
 
   // show the default model until the provider list is probed
   if (!modelSelect.options.length) {
@@ -127,6 +129,35 @@ apiModeSelect.addEventListener("change", async () => {
   await updateModeUI();
   // probe the model list with the key already saved for this provider
   await probeModelsForCurrentMode();
+});
+
+// probe the model list as soon as the user has typed a key, no need to
+// wait for Save & Test
+let modelProbeTimer: number | undefined;
+
+function scheduleModelProbe(): void {
+  const mode = currentMode();
+  const key = apiKeyInput.value.trim();
+  if (!key) {
+    return;
+  }
+  if (modelProbeTimer !== undefined) {
+    clearTimeout(modelProbeTimer);
+  }
+  modelProbeTimer = window.setTimeout(async () => {
+    const models = await fetchModelList(mode, key);
+    if (models.length) {
+      fillModelList(models, mode);
+    }
+  }, 600);
+}
+
+apiKeyInput.addEventListener("input", scheduleModelProbe);
+
+langSelect.addEventListener("change", async () => {
+  await setLanguage(langSelect.value as Lang);
+  await applyI18n();
+  await updateModeUI();
 });
 
 async function probeModelsForCurrentMode(): Promise<void> {
@@ -188,7 +219,7 @@ testButton.onclick = async () => {
   const apiKey = apiKeyInput.value.trim();
 
   if (!apiKey) {
-    showStatus(messenger.i18n.getMessage("enterApiKey"), "red");
+    await showStatus("enterApiKey", "red");
     return;
   }
 
@@ -243,13 +274,13 @@ testButton.onclick = async () => {
       // probe the model list so the user can pick instead of typing
       const models = await fetchModelList(mode, apiKey);
       fillModelList(models, mode);
-      showStatus(messenger.i18n.getMessage("settingsSaved"), "green");
+      await showStatus("settingsSaved", "green");
     } else {
-      showStatus(messenger.i18n.getMessage("invalidKeyOrEndpoint"), "red");
+      await showStatus("invalidKeyOrEndpoint", "red");
     }
   } catch (error) {
     console.warn("Error testing API key:", error);
-    showStatus(messenger.i18n.getMessage("testError"), "red");
+    await showStatus("testError", "red");
   }
 };
 
@@ -259,7 +290,12 @@ testButton.onclick = async () => {
     "apiMode",
     "model",
     "baseUrl",
+    "language",
   ]);
+  const language = await getLanguage();
+  langSelect.value = language;
+  await applyI18n();
+
   if (storage.apiMode === "openai" || storage.apiMode === "deepseek") {
     apiModeSelect.value = storage.apiMode;
   }
