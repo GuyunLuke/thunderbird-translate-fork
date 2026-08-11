@@ -1,66 +1,67 @@
-# ![Thunderbird Translate icon](/src/assets/icon-32.png) [Thunderbird Translate Fork](https://github.com/GuyunLuke/thunderbird-translate-fork)
+# ![Thunderbird Translate icon](/src/assets/icon-32.png) Thunderbird Translate Fork
 
-A fork of [sully-vian/thunderbird-translate](https://github.com/sully-vian/thunderbird-translate) with configurable models and additional translation providers (DeepSeek, any OpenAI-compatible endpoint).
+一键翻译邮件正文（HTML 或纯文本）的 Thunderbird 扩展，翻译结果以横幅显示在邮件顶部。
 
-Thunderbird Translate adds a one-click translation banner to messages in Thunderbird. Translate an email's body (html or plain text) using the Gemini API (or any OpenAI-compatible endpoint) and show the translated result at the top of the message.
+本项目是 [sully-vian/thunderbird-translate](https://github.com/sully-vian/thunderbird-translate) 的 fork，在保留原版功能（Gemini 翻译引擎、HTML 结构保留）的基础上增加了多 provider 支持与更完善的配置能力。
 
-Banner shown at the top of an email | Options page
-:-------------------------:|:-------------------------:
-![Translate banner image](screenshots/example-german-english.png) | ![Translate options page image](screenshots/example-options.png)
+## 新增功能（相对原版）
 
-## Why install
+- **多种 API 提供商**：Google Gemini / DeepSeek / 任意 OpenAI 兼容端点（OpenAI、DeepSeek、Ollama、LM Studio、中转站等）
+- **模型自动探测**：填写 API 密钥后自动拉取 provider 的模型列表（`GET /models`）填充下拉菜单，无需手动输入
+- **密钥与模型按 provider 隔离**：每个 provider 独立保存自己的 API 密钥与所选模型，切换 provider 不会串用
+- **DeepSeek 专用模式**：锁定官方端点 `https://api.deepseek.com`，自动关闭思考模式（`thinking: disabled`）以获得快速响应
+- **翻译目标语言**：自动（跟随界面语言，原版行为）或固定为中文 / English / Français
+- **界面语言切换**：中文（默认）/ English / Français
+- **重模板邮件优化**：翻译前在隐藏 iframe 中真实渲染邮件，只提取 CSS 实际显示的文本（自动跳过 `display:none` 预览段、媒体查询隐藏的变体等），并做段落级去重，避免模板冗余内容进入翻译请求
 
-- Quick, in-context translations without switching apps
-- Preserves HTML structure for rich messages
-- Local API key storage - you control the key.
-- Configurable model and provider: use Google Gemini, DeepSeek, or any OpenAI-compatible endpoint (OpenAI, Ollama, LM Studio, custom relay/proxy servers, etc.)
+## 设置
 
-## Setting up
+在设置页完成配置（可从邮件横幅或附加组件管理器中打开）：
 
-Just download the add-on, Thunderbird will take care of the installation. Open the add-on's Settings page to configure:
+1. **API Provider**：Google Gemini / DeepSeek / OpenAI-compatible 三选一
+2. **API 密钥**：当前 provider 专属密钥，输入后自动探测模型列表
+3. **模型**：下拉选择探测到的模型；探测失败时留空（翻译使用该 provider 的默认模型）
+4. **Base URL**（仅 OpenAI-compatible 模式）：自定义端点，如 `https://api.openai.com/v1`、`http://localhost:11434/v1`（Ollama）
+5. **翻译目标语言**：自动 / 中文 / English / Français
+6. 点击 **保存并测试** 验证配置并持久化
 
-1. **API Provider**: choose *Google Gemini* (default), *DeepSeek*, or *OpenAI-compatible*.
-2. **Model**: any model name supported by your provider (e.g. `gemini-2.0-flash-exp`, `deepseek-v4-flash`, `deepseek-v4-pro`, `gpt-4o-mini`, or a local model served by Ollama).
-3. **Base URL** (DeepSeek / OpenAI-compatible modes): the endpoint root. DeepSeek is preset to `https://api.deepseek.com`; for others e.g. `https://api.openai.com/v1`, or `http://localhost:11434/v1` for Ollama.
-4. **API Key**: your key for the selected provider. If you don't have a Gemini key yet, you can get one for **free** at [https://aistudio.google.com/apikey](https://aistudio.google.com/apikey); DeepSeek keys are issued at [https://platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys).
+API 密钥获取：Google Gemini 可在 [https://aistudio.google.com/apikey](https://aistudio.google.com/apikey) 免费申请；DeepSeek 在 [https://platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys) 申请。
 
-Click **Save & Test** to validate the settings before using the add-on.
+## 使用
 
-## Privacy / Data sent
+在邮件工具栏点击翻译按钮，翻译横幅会出现在邮件顶部，带有一个打开设置页的链接。
 
-- What is sent: the email message body (text/plain or text/html) is sent to the translation provider you configured for translation.
-- What is NOT sent: account passwords or Thunderbird credentials.
-- API key: stored locally in Thunderbird browser storage (`browser.storage.local`).
-- Recommendation: do not translate sensitive or confidential content.
+## 隐私 / 数据发送
 
-## Contributing
+- 发送内容：仅邮件正文（HTML 会先提取为纯文本）发送给你配置的翻译服务商
+- 不发送：账号密码、邮箱凭据、邮件头、收件人、主题、附件及任何邮箱元数据
+- API 密钥：保存在扩展本地存储（`browser.storage.local`），仅用于向配置的 provider 验证请求
+- 建议：请勿翻译敏感或机密内容
 
-Contributions welcome, especially concerning the localization.
+## 构建
 
 ```bash
-# to install the dependencies
+# 安装依赖
 npm install
 
-# to compile the project without minifying scripts
+# 开发构建（不压缩）
 npm run build:dev
 
-# to compile project and minify scripts
+# 生产构建（压缩）
 npm run build:prod
 
-# to package the add-on as an .xpi file
-npm run build:web-ext
+# 打包为 .xpi
+npm run build:xpi
 ```
 
-To debug the add-on, load the `dist/manifest.json` file with Thunderbird after building the project.
+调试：构建后在 Thunderbird 中通过"加载临时附加组件"加载 `dist/manifest.json`，或直接安装打包好的 `.xpi`。
 
-## License
+## 许可证
 
-This project is distributed under the terms in [LICENSE](LICENSE)
+本项目使用 [MPL-2.0](LICENSE)（Mozilla Public License 2.0），与原仓库 [sully-vian/thunderbird-translate](https://github.com/sully-vian/thunderbird-translate) 一致。根据 MPL-2.0 要求，本 fork 保留原始版权声明与许可文本，修改记录可通过 git 历史追溯。
 
-## Acknowledgements
+## 致谢
 
-- Icon: [Bootstrap Icons - Translate](https://icons.getbootstrap.com/icons/translate/)
-- Translation engine: [Google Gemini 2.5 Flash](https://ai.google.dev/gemini-api/docs/models#gemini-2.5-flash)
-- HTML purifier: [DOMPurify](https://dompurify.com/)
-- Google Gen AI SDK: [@google/genai](https://googleapis.github.io/js-genai)
-
+- 原项目：[sully-vian/thunderbird-translate](https://github.com/sully-vian/thunderbird-translate)
+- 图标：[Bootstrap Icons - Translate](https://icons.getbootstrap.com/icons/translate/)
+- HTML 净化：[DOMPurify](https://dompurify.com/)
