@@ -162,6 +162,14 @@ const API_KEY_STORAGE_KEY: Record<ApiMode, string> = {
     openai: "apiKeyOpenAI",
 };
 
+// model names are stored per provider as well, so switching providers never
+// leaks a model name from another provider into the request
+const MODEL_STORAGE_KEY: Record<ApiMode, string> = {
+    gemini: "modelGemini",
+    deepseek: "modelDeepSeek",
+    openai: "modelOpenAI",
+};
+
 async function translationSystemPrompt(): Promise<string> {
     const lang = await getLanguage();
     return `
@@ -185,12 +193,15 @@ interface TranslationConfig {
 async function getTranslationConfig(): Promise<TranslationConfig> {
     const storage = await browser.storage.local.get([
         "apiMode",
-        "model",
         "baseUrl",
         "apiKeyGemini",
         "apiKeyDeepSeek",
         "apiKeyOpenAI",
         "apiKey",
+        "modelGemini",
+        "modelDeepSeek",
+        "modelOpenAI",
+        "model",
     ]);
 
     let apiMode: ApiMode;
@@ -212,10 +223,16 @@ async function getTranslationConfig(): Promise<TranslationConfig> {
         throw new Error(await getMessage("apiKeyMissing"));
     }
 
+    let model: string | undefined = storage[MODEL_STORAGE_KEY[apiMode]] || undefined;
+    // migrate the legacy single-model config to the Gemini slot
+    if (!model && apiMode === "gemini" && storage.model) {
+        model = storage.model;
+    }
+
     return {
         apiKey,
         apiMode,
-        model: storage.model,
+        model,
         baseUrl: storage.baseUrl,
     };
 }

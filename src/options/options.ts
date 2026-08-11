@@ -38,6 +38,14 @@ const API_KEY_STORAGE_KEY: Record<string, string> = {
   openai: "apiKeyOpenAI",
 };
 
+// per-provider model name slots, so switching providers never leaks a model
+// name from another provider into the request
+const MODEL_STORAGE_KEY: Record<string, string> = {
+  gemini: "modelGemini",
+  deepseek: "modelDeepSeek",
+  openai: "modelOpenAI",
+};
+
 const langSelect = document.getElementById("langSelect") as HTMLSelectElement;
 const apiKeyInput = document.getElementById("apiKeyInput") as HTMLInputElement;
 const apiKeyLabel = document.getElementById("apiKeyLabel") as HTMLLabelElement;
@@ -127,6 +135,19 @@ async function updateModeUI(): Promise<void> {
 
 apiModeSelect.addEventListener("change", async () => {
   await updateModeUI();
+  // restore the model saved for this provider before probing
+  const mode = currentMode();
+  const storage = await messenger.storage.local.get([
+    MODEL_STORAGE_KEY[mode],
+    "model",
+  ]);
+  const savedModel =
+    storage[MODEL_STORAGE_KEY[mode]] ||
+    (mode === "gemini" ? storage.model : "") ||
+    "";
+  if (savedModel) {
+    fillModelList([savedModel], mode);
+  }
   // probe the model list with the key already saved for this provider
   await probeModelsForCurrentMode();
 });
@@ -266,8 +287,8 @@ testButton.onclick = async () => {
       // Save all settings if the test succeeds
       await messenger.storage.local.set({
         [API_KEY_STORAGE_KEY[mode]]: apiKey,
+        [MODEL_STORAGE_KEY[mode]]: modelSelect.value,
         apiMode: mode,
-        model: modelSelect.value,
         // only the OpenAI-compatible mode has a custom base URL
         baseUrl: mode === "openai" ? baseUrlInput.value.trim() : "",
       });
@@ -289,6 +310,9 @@ testButton.onclick = async () => {
   const storage = await messenger.storage.local.get([
     "apiMode",
     "model",
+    "modelGemini",
+    "modelDeepSeek",
+    "modelOpenAI",
     "baseUrl",
     "language",
   ]);
@@ -303,9 +327,14 @@ testButton.onclick = async () => {
     baseUrlInput.value = storage.baseUrl;
   }
   await updateModeUI();
-  // restore the saved model selection when it exists
-  if (storage.model) {
-    fillModelList([storage.model], currentMode());
+  // restore the model saved for the active provider when it exists
+  const activeMode = currentMode();
+  const savedModel =
+    storage[MODEL_STORAGE_KEY[activeMode]] ||
+    (activeMode === "gemini" ? storage.model : "") ||
+    "";
+  if (savedModel) {
+    fillModelList([savedModel], activeMode);
   }
   // probe the model list with the key already saved for this provider
   await probeModelsForCurrentMode();
