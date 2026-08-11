@@ -99,14 +99,36 @@ async function translateEmail(
     }
 }
 
-// Extract visible plain text from an HTML mail body. Walks the sanitized
-// DOM, skipping hidden subtrees (display:none previews etc.), keeps only one
-// of the duplicate desktop/mobile variant blocks, and drops duplicate
-// paragraphs so template redundancy never reaches the translation API.
+// Render the mail HTML in a hidden desktop-width iframe and extract the
+// actually visible text. Anything hidden by CSS — display:none previews,
+// media-query variants, class rules — is skipped naturally by the computed
+// styles, no per-template special-casing. Duplicate paragraphs are dropped
+// as a final safety net.
 function htmlToPlainText(html: string): string {
-    const desktop = extractVisibleText(html, "ntes-edm-mobile");
-    const mobile = extractVisibleText(html, "ntes-edm-desktop");
-    const text = desktop.length >= mobile.length ? desktop : mobile;
+    // strip images so the render does not trigger network requests
+    const clean = html.replace(/<img\b[^>]*>/gi, " ");
+
+    const iframe = document.createElement("iframe");
+    iframe.style.width = "800px";
+    iframe.style.height = "1px";
+    iframe.style.visibility = "hidden";
+    iframe.style.position = "absolute";
+    iframe.style.left = "-9999px";
+    document.body.appendChild(iframe);
+
+    let text = "";
+    try {
+        const doc = iframe.contentDocument;
+        if (!doc || !doc.body) {
+            return "";
+        }
+        doc.open();
+        doc.write(clean);
+        doc.close();
+        text = extractVisibleText(doc.body);
+    } finally {
+        iframe.remove();
+    }
 
     // paragraph-level deduplication, keeping the first occurrence
     const seen = new Set<string>();
@@ -125,39 +147,26 @@ function htmlToPlainText(html: string): string {
     return lines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 
-// Walk the sanitized DOM and collect visible text. Subtree skipped when it
-// is hidden or carries the given variant class.
-function extractVisibleText(html: string, dropVariantClass: string): string {
-    const doc = DOMPurify.sanitize(html, { RETURN_DOM: true });
+// Collect the visible text of a rendered document, honoring the computed
+// display/visibility of every element.
+function extractVisibleText(root: Element): string {
     const parts: string[] = [];
-
-    function isHidden(el: Element): boolean {
-        const style = (el as HTMLElement).style;
-        return (
-            style.display === "none" ||
-            style.visibility === "hidden" ||
-            el.getAttribute("hidden") !== null
-        );
-    }
 
     function walk(node: Node): void {
         if (node.nodeType === Node.TEXT_NODE) {
-            const text = (node.textContent || "").trim();
-            if (text) {
-                parts.push(text);
+            const t = (node.textContent || "").trim();
+            if (t) {
+                parts.push(t);
             }
             return;
         }
         if (node.nodeType !== Node.ELEMENT_NODE) {
             return;
         }
-        const el = node as Element;
-        const cls = String(el.className || "");
-        if (cls.includes(dropVariantClass)) {
-            return; // skip this duplicate desktop/mobile variant block
-        }
-        if (isHidden(el)) {
-            return; // skip display:none / hidden subtrees
+        const el = node as HTMLElement;
+        const cs = window.getComputedStyle(el);
+        if (cs.display === "none" || cs.visibility === "hidden") {
+            return; // hidden by CSS: skip the whole subtree
         }
         for (const child of Array.from(el.childNodes)) {
             walk(child);
@@ -167,7 +176,7 @@ function extractVisibleText(html: string, dropVariantClass: string): string {
         }
     }
 
-    for (const child of Array.from(doc.childNodes)) {
+    for (const child of Array.from(root.childNodes)) {
         walk(child);
     }
 
