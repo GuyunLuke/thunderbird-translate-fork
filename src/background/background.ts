@@ -152,7 +152,7 @@ const DEFAULT_MODEL_DEEPSEEK = "deepseek-v4-flash";
 const DEFAULT_MODEL_OPENAI = "gpt-4o-mini";
 const DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1";
 const DEFAULT_DEEPSEEK_BASE_URL = "https://api.deepseek.com";
-const FETCH_TIMEOUT_MS = 60000;
+const FETCH_TIMEOUT_MS = 30000;
 
 type ApiMode = "gemini" | "deepseek" | "openai";
 
@@ -320,6 +320,9 @@ async function callOpenAICompatible(
             { role: "system", content: await translationSystemPrompt() },
             { role: "user", content: "Content to translate:\n" + text },
         ],
+        // DeepSeek v4 models default to thinking mode, which makes them slow
+        // on long inputs. Translation does not need reasoning, so disable it.
+        ...(isDeepSeek ? { thinking: { type: "disabled" } } : {}),
     };
 
     const response = await fetchWithTimeout(url, {
